@@ -1,3 +1,30 @@
-papers/*
-.idea
+# Papers directory
+papers/
+
+# IDE settings
+.idea/
+
+# macOS system files
 .DS_Store
+
+# Simulator (large binary files)
+DonkeySimMac/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.env/
+venv/
+env/
+
+# Model checkpoints and logs
+models/
+logs/
+*.h5
+*.pkl
+*.pt
+*.pth
