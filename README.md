@@ -2,7 +2,7 @@
 
 > Visual-based Autonomous Driving Agent using PPO & SAC with Different Environments and Interpretability Analysis
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.7-blue.svg)](https://www.python.org/)
 [![CARLA](https://img.shields.io/badge/CARLA-0.9.12-orange.svg)](https://carla.org/)
 [![Framework](https://img.shields.io/badge/Framework-Gymnasium%20%7C%20SB3-green.svg)](https://stable-baselines3.readthedocs.io/)
 [![License](https://img.shields.io/badge/license-Apache%20License%202.0-lightgrey.svg)](LICENSE)
