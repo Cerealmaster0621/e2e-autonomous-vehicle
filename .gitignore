@@ -10,6 +10,9 @@ papers/
 # Simulator (large binary files)
 DonkeySimMac/
 
+# gym_donkeycar directory
+gym-donkeycar/
+
 # Python cache
 __pycache__/
 *.pyc
@@ -28,3 +31,6 @@ logs/
 *.pkl
 *.pt
 *.pth
+
+# model
+*.zip
