@@ -2,14 +2,14 @@
 
 > Visual-based Autonomous Driving Agent using PPO & SAC with Different Environments and Interpretability Analysis
 
-[![Python](https://img.shields.io/badge/Python-3.7-blue.svg)](https://www.python.org/)
-[![CARLA](https://img.shields.io/badge/CARLA-0.9.12-orange.svg)](https://carla.org/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![CARLA](https://img.shields.io/badge/Donkey_Simulator-25.10.06-orange.svg)](https://docs.donkeycar.com/guide/deep_learning/simulator/)
 [![Framework](https://img.shields.io/badge/Framework-Gymnasium%20%7C%20SB3-green.svg)](https://stable-baselines3.readthedocs.io/)
 [![License](https://img.shields.io/badge/license-Apache%20License%202.0-lightgrey.svg)](LICENSE)
 
 ## Project Overview
 
-This project implements an **End-to-End Reinforcement Learning (RL)** pipeline for autonomous driving using the **CARLA Simulator (0.9.12)**.
+This project implements an **End-to-End Reinforcement Learning (RL)** pipeline for autonomous driving using the **Donkey Simulator(v25.10.06)**.
 
 The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms and analyze their robustness against environmental variations (weather, dynamic obstacles) and interpret their failure modes using Visual Attention Maps.
 
