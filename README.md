@@ -48,7 +48,7 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
   cd e2e-autonomous-vehicle
 ```
 
-3. clone `[gym_donkeycar](https://github.com/Cerealmaster0621/gym-donkeycar.git)` repository
+3. clone [gym_donkeycar](https://github.com/Cerealmaster0621/gym-donkeycar) repository
 
 ```bash
   git clone https://github.com/Cerealmaster0621/gym-donkeycar.git
