@@ -40,7 +40,7 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 
 ## Getting Started
 
-1. download `DonkeySim` simulator following the instruction inside the project folder
+1. download [DonkeySim](https://docs.donkeycar.com/guide/deep_learning/simulator/) simulator following the instruction inside the project folder
 2. clone this repository
 
 ```bash
