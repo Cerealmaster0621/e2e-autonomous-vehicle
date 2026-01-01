@@ -41,38 +41,36 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 ## Getting Started
 
 1. download `DonkeySim` simulator following the instruction inside the project folder
-2. clone `gym_donkeycar` following the instruction inside the project folder
-
-- if you are using mac os, add following code inside `gym_donkeycar/envs/donkey_proc.py` file
-  ```python3
-          # line 25 ~
-          # On macOS, .app is a directory.
-          if sim_path.endswith(".app"):
-          # Try to find the executable inside the bundle
-          app_name = os.path.splitext(os.path.basename(sim_path))[0]
-          mac_exe = os.path.join(sim_path, "Contents", "MacOS", app_name)
-          if os.path.exists(mac_exe):
-              sim_path = mac_exe
-  ```
-
-3. clone this repository
+2. clone this repository
 
 ```bash
   git clone https://github.com/Cerealmaster0621/e2e-autonomous-vehicle.git
   cd e2e-autonomous-vehicle
 ```
 
-4. make conda environment and activate
+3. clone `[gym_donkeycar](https://github.com/Cerealmaster0621/gym-donkeycar.git)` repository
+
+```bash
+  git clone https://github.com/Cerealmaster0621/gym-donkeycar.git
+  cd gym-donkeycar
+  pip install -e .
+  cd ..
+```
+
+4. make conda environment and activate, install the requirements
 
 ```bash
   conda create -n e2e-autonomous-vehicle python=3.11 -y
   conda activate e2e-autonomous-vehicle
+  pip install -r requirements.txt
 ```
 
 5. (optional)run the test
 
 ```bash
-  sudo python src/test.py --sim {path to donkey_sim.app file}
+  python src/test.py --sim {path to donkey_sim.app file}
 ```
+
+> **Note:** If you get permission errors, do not use `sudo` unless necessary.
 
 ---
