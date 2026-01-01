@@ -40,4 +40,19 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 
 ## Getting Started
 
+1. download `DonkeySim` simulator following the instruction inside the project folder
+2. clone `gym_donkeycar` following the instruction inside the project folder
+
+- if you are using mac os, add following code inside `gym_donkeycar/envs/donkey_proc.py` file
+  ```python3
+          # line 25 ~
+          # On macOS, .app is a directory.
+          if sim_path.endswith(".app"):
+          # Try to find the executable inside the bundle
+          app_name = os.path.splitext(os.path.basename(sim_path))[0]
+          mac_exe = os.path.join(sim_path, "Contents", "MacOS", app_name)
+          if os.path.exists(mac_exe):
+              sim_path = mac_exe
+  ```
+
 ---
