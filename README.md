@@ -40,15 +40,14 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 
 ## Getting Started
 
-1. download [DonkeySim](https://docs.donkeycar.com/guide/deep_learning/simulator/) simulator following the instruction inside the project folder
-2. clone this repository
+1. clone this repository
 
 ```bash
   git clone https://github.com/Cerealmaster0621/e2e-autonomous-vehicle.git
   cd e2e-autonomous-vehicle
 ```
 
-3. clone [gym_donkeycar](https://github.com/Cerealmaster0621/gym-donkeycar) repository
+2. clone [gym_donkeycar](https://github.com/Cerealmaster0621/gym-donkeycar) repository
 
 ```bash
   git clone https://github.com/Cerealmaster0621/gym-donkeycar.git
@@ -56,6 +55,8 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
   pip install -e .
   cd ..
 ```
+
+3. download [DonkeySim](https://docs.donkeycar.com/guide/deep_learning/simulator/) simulator following the instruction inside the project folder
 
 4. make conda environment and activate, install the requirements
 
