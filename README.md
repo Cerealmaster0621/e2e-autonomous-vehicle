@@ -55,4 +55,24 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
               sim_path = mac_exe
   ```
 
+3. clone this repository
+
+```bash
+  git clone https://github.com/Cerealmaster0621/e2e-autonomous-vehicle.git
+  cd e2e-autonomous-vehicle
+```
+
+4. make conda environment and activate
+
+```bash
+  conda create -n e2e-autonomous-vehicle python=3.11 -y
+  conda activate e2e-autonomous-vehicle
+```
+
+5. (optional)run the test
+
+```bash
+  sudo python src/test.py --sim {path to donkey_sim.app file}
+```
+
 ---
