@@ -5,6 +5,7 @@ import gymnasium as gym
 import gym_donkeycar
 from stable_baselines3 import PPO
 
+from configs.load_config import load_config
 from envs.test_reward import custom_reward
 
 if __name__ == "__main__":
@@ -44,27 +45,23 @@ if __name__ == "__main__":
         exit(1)
 
     env_id = args.env_name
-
-    conf = {
-        "exe_path": args.sim,
-        "host": "127.0.0.1",
-        "port": args.port,
-        "body_style": "donkey",
-        "body_rgb": (128, 128, 128),
-        "car_name": "me",
-        "font_size": 100,
-        "racer_name": "TEST",
-        "country": "KOREA",
-        "guid": str(uuid.uuid4()),
-        "max_cte": 10,
-    }
+    
+    # load configs
+    config = load_config()
+    conf = config["conf"]
+    ppo_config = config["ppo"]
+    
+    conf["exe_path"] = args.sim
+    conf["port"] = args.port
+    conf["guid"] = str(uuid.uuid4())
+    
 
     if args.test:
         # Make an environment test our trained policy
         env = gym.make(args.env_name, conf=conf)
         env.unwrapped.set_reward_fn(custom_reward)
 
-        model = PPO.load("ppo_donkey")
+        model = PPO.load(ppo_config["save_path"])
 
         obs, info = env.reset()
         for _ in range(10):
@@ -81,7 +78,7 @@ if __name__ == "__main__":
         env = gym.make(args.env_name, conf=conf)
         env.unwrapped.set_reward_fn(custom_reward)
         # create cnn policy(mlp won't work if the environment is not a image)
-        model = PPO("CnnPolicy", env, verbose=1)
+        model = PPO(ppo_config["policy"], env, verbose=1)
 
         # set up model in learning mode with goal number of timesteps to complete
         model.learn(total_timesteps=10)
@@ -104,10 +101,10 @@ if __name__ == "__main__":
 
             if i % 100 == 0:
                 print("saving...")
-                model.save("ppo_donkey")
+                model.save(ppo_config["save_path"])
 
         # Save the agent
-        model.save("ppo_donkey")
+        model.save(ppo_config["save_path"])
         print("done training")
 
     env.close()

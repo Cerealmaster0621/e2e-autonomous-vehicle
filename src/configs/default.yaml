@@ -1,0 +1,48 @@
+#========== GENERAL CONFIGS ==========
+
+conf:
+  host: "127.0.0.1"
+  body_style: "donkey"
+  body_rgb: [255, 0, 0]
+  car_name: "me"
+  font_size: 50
+  racer_name: "TEST"
+  country: "KOREA"
+  max_cte: 10
+  # guid, exe_path, port will be filled from CLI
+
+#========== TRAINING CONFIGS ==========
+
+ppo:
+  total_timesteps: 100000
+  learning_rate: 0.0003
+  save_path: "src/models/saved/ppo_donkey"
+  save_interval: 1000
+  policy: "CnnPolicy"
+
+sac:
+  total_timesteps: 100000
+  learning_rate: 0.0003
+  save_path: "src/models/saved/sac_donkey"
+  save_interval: 1000
+
+#========== REWARD CONFIGS ==========
+
+reward:
+  speed_reward: 1.0
+  progress_reward: 1.0
+  collision_penalty: -10.0
+  lane_centering_penalty: -10.0
+  steering_smoothness_penalty: -1.0
+  acceleration_smoothness_penalty: -1.0
+  lateral_stability_penalty: -1.0
+
+#========== WRAPPER CONFIGS ==========
+
+wrapper:
+  roi_crop: [40, 0, 0, 0]
+  resize: [80, 80]
+  grayscale: true
+  binary_threshold: null
+  normalize: true
+  frame_stack: 4
