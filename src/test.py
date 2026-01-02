@@ -81,7 +81,7 @@ if __name__ == "__main__":
         model = PPO(ppo_config["policy"], env, verbose=1)
 
         # set up model in learning mode with goal number of timesteps to complete
-        model.learn(total_timesteps=10)
+        model.learn(total_timesteps=ppo_config["total_timesteps"])
 
         obs, info = env.reset()
 
