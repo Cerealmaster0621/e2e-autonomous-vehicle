@@ -25,7 +25,10 @@ venv/
 env/
 
 # Model checkpoints and logs
-models/
+models/*
+!models/.gitkeep
+models/saved/*
+!models/saved/.gitkeep
 logs/
 *.h5
 *.pkl
