@@ -30,6 +30,7 @@ models/*
 models/saved/*
 !models/saved/.gitkeep
 logs/
+!logs/.gitkeep
 *.h5
 *.pkl
 *.pt

@@ -6,7 +6,7 @@ import gym_donkeycar
 from stable_baselines3 import PPO
 
 from configs.load_config import load_config
-from envs.test_reward import custom_reward
+from envs.reward import default_reward, reset_reward_history
 
 if __name__ == "__main__":
     # Initialize the donkey environment
@@ -51,43 +51,54 @@ if __name__ == "__main__":
     conf = config["conf"]
     ppo_config = config["ppo"]
     
+    # Fill in CLI arguments
     conf["exe_path"] = args.sim
     conf["port"] = args.port
     conf["guid"] = str(uuid.uuid4())
-    
 
     if args.test:
         # Make an environment test our trained policy
         env = gym.make(args.env_name, conf=conf)
-        env.unwrapped.set_reward_fn(custom_reward)
+        env.unwrapped.set_reward_fn(default_reward)
 
         model = PPO.load(ppo_config["save_path"])
 
         obs, info = env.reset()
-        for _ in range(10):
+        reset_reward_history(env.unwrapped.viewer.handler)
+        
+        for _ in range(1000):
             action, _states = model.predict(obs, deterministic=True)
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
+            
             if terminated or truncated:
                 obs, info = env.reset()
+                reset_reward_history(env.unwrapped.viewer.handler)
 
         print("done testing")
 
     else:
         # make gym env
         env = gym.make(args.env_name, conf=conf)
-        env.unwrapped.set_reward_fn(custom_reward)
-        # create cnn policy(mlp won't work if the environment is not a image)
-        model = PPO(ppo_config["policy"], env, verbose=1)
+        env.unwrapped.set_reward_fn(default_reward)
+        
+        # Create CNN policy (MLP won't work for image observations)
+        model = PPO(
+            ppo_config["policy"], 
+            env, 
+            verbose=1,
+            learning_rate=ppo_config.get("learning_rate", 3e-4),
+            tensorboard_log="src/logs/",
+        )
 
-        # set up model in learning mode with goal number of timesteps to complete
+        # Train the model
         model.learn(total_timesteps=ppo_config["total_timesteps"])
 
         obs, info = env.reset()
+        reset_reward_history(env.unwrapped.viewer.handler)
 
         for i in range(10):
             action, _states = model.predict(obs, deterministic=True)
-
             obs, reward, terminated, truncated, info = env.step(action)
 
             try:
@@ -98,12 +109,13 @@ if __name__ == "__main__":
 
             if terminated or truncated:
                 obs, info = env.reset()
+                reset_reward_history(env.unwrapped.viewer.handler)
 
-            if i % 100 == 0:
+            if i % ppo_config.get("save_interval", 1000) == 0:
                 print("saving...")
                 model.save(ppo_config["save_path"])
 
-        # Save the agent
+        # Save the final model
         model.save(ppo_config["save_path"])
         print("done training")
 
