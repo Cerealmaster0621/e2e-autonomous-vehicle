@@ -29,8 +29,10 @@ models/*
 !models/.gitkeep
 models/saved/*
 !models/saved/.gitkeep
+models/saved/checkpoints/*
+!models/saved/checkpoints/.gitkeep
 logs/
-!logs/.gitkeep
+!logs/readme.md
 *.h5
 *.pkl
 *.pt
