@@ -10,6 +10,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 
 from configs.load_config import load_config
 from envs.reward import default_reward, reset_reward_history
+from envs.wrapper import make_wrapped_env
 
 if __name__ == "__main__":
     # load configs
@@ -28,8 +29,8 @@ if __name__ == "__main__":
         "donkey-waveshare-v0",
         "donkey-minimonaco-track-v0",
         "donkey-warren-track-v0",
-        "donkey-thunderhill-track-v0",
         "donkey-circuit-launch-track-v0",
+        "donkey-mountain-track-v0",
     ]
 
     parser = argparse.ArgumentParser(description="test")
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         "--env_name", type=str, default="donkey-warehouse-v0", help="name of donkey sim environment", choices=env_list
     )
     parser.add_argument(
-        "--resume", type=str, default=ppo_config["save_path"], 
+        "--resume", type=str, default=None, 
         help="path to checkpoint to resume training from (e.g., src/models/saved/checkpoints/ppo_donkey_40960_steps.zip)"
     )
     parser.add_argument(
@@ -71,6 +72,9 @@ if __name__ == "__main__":
         # Make an environment test our trained policy
         env = gym.make(args.env_name, conf=conf)
         env.unwrapped.set_reward_fn(default_reward)
+        
+        # Apply image processing wrappers
+        env = make_wrapped_env(env, config)
 
         # Load model WITH environment to ensure observation space is properly handled
         model = PPO.load(ppo_config["save_path"], env=env)
@@ -105,6 +109,9 @@ if __name__ == "__main__":
         # make gym env
         env = gym.make(args.env_name, conf=conf)
         env.unwrapped.set_reward_fn(default_reward)
+        
+        # Apply image processing wrappers
+        env = make_wrapped_env(env, config)
         
         # Setup checkpoint directory
         checkpoint_dir = "src/models/saved/checkpoints"

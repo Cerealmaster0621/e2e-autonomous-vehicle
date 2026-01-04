@@ -14,7 +14,7 @@ conf:
 #========== TRAINING CONFIGS ==========
 
 ppo:
-  total_timesteps: 250000
+  total_timesteps: 500000
   learning_rate: 0.0001
   save_path: "src/models/saved/ppo_donkey"
   save_interval: 10000
@@ -25,7 +25,7 @@ ppo:
   gamma: 0.99
   gae_lambda: 0.95
   clip_range: 0.2
-  ent_coef: 0.01
+  ent_coef: 0.02
 
 sac:
   total_timesteps: 500000
@@ -36,13 +36,13 @@ sac:
 #========== REWARD CONFIGS ==========
 
 reward:
-  target_velocity: 18.0
+  target_velocity: 16.0
   min_velocity: 3.0 # Minimum velocity threshold before idle penalty kicks in
 
   # Safety rewards (primary guidance signals)
   speed_reward: 1.0 # Reward for maintaining target speed
   lane_centering_reward: 1.0 # Primary signal - staying centered
-  collision_penalty: -10.0
+  collision_penalty: -3.0
   idle_penalty: -1.0 # Penalize standing still / not moving
 
   # Comfort rewards (meaningful but secondary)
@@ -62,5 +62,4 @@ wrapper:
   resize: [80, 80]
   grayscale: true
   binary_threshold: null
-  normalize: true
   frame_stack: 4
