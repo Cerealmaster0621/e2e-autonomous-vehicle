@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import os
+import time
 import sys
 import uuid
 import random
@@ -33,19 +34,32 @@ from envs.wrapper import make_wrapped_env
 from envs.callbacks import CameraViewCallback, ProgressCallback
 
 
-# All available tracks
-ALL_TRACKS = [
-    "donkey-warehouse-v0",
-    "donkey-generated-roads-v0",
-    "donkey-avc-sparkfun-v0",
-    "donkey-generated-track-v0",
-    "donkey-roboracingleague-track-v0",
-    "donkey-waveshare-v0",
-    "donkey-minimonaco-track-v0",
-    "donkey-warren-track-v0",
-    "donkey-circuit-launch-track-v0",
-    "donkey-mountain-track-v0",
-]
+# Tracks organized by difficulty (curriculum learning: easy -> medium -> hard)
+TRACKS_BY_DIFFICULTY = {
+    "easy": [
+        "donkey-warehouse-v0",      # Indoor, simple oval track
+        "donkey-generated-track-v0", # Simple generated track
+        "donkey-waveshare-v0",       # Simple track
+    ],
+    "medium": [
+        "donkey-warren-track-v0",    # Outdoor with curves
+        "donkey-circuit-launch-track-v0",  # Circuit track
+        "donkey-generated-roads-v0", # Generated roads with variety
+    ],
+    "hard": [
+        "donkey-minimonaco-track-v0",      # Complex Monaco-style track
+        "donkey-avc-sparkfun-v0",          # Competition track
+        "donkey-roboracingleague-track-v0", # Racing league track
+        "donkey-mountain-track-v0",         # Mountain terrain
+    ],
+}
+
+# All tracks in curriculum order (easy -> medium -> hard)
+ALL_TRACKS = (
+    TRACKS_BY_DIFFICULTY["easy"] + 
+    TRACKS_BY_DIFFICULTY["medium"] + 
+    TRACKS_BY_DIFFICULTY["hard"]
+)
 
 # Short name to full name mapping
 TRACK_ALIASES = {
@@ -163,10 +177,18 @@ def main():
     print("\n" + "=" * 60)
     print("DOMAIN RANDOMIZATION TRAINING")
     print("=" * 60)
-    print(f"Tracks ({len(tracks)}):")
-    for i, t in enumerate(tracks, 1):
-        print(f"  {i}. {t}")
-    print(f"Switch frequency: Every iteration ({ppo_config.get('n_steps', 2048)} steps)")
+    print(f"\nTrack Order ({len(tracks)} tracks):")
+    
+    # Show tracks by difficulty
+    for difficulty in ["easy", "medium", "hard"]:
+        difficulty_tracks = [t for t in tracks if t in TRACKS_BY_DIFFICULTY.get(difficulty, [])]
+        if difficulty_tracks:
+            print(f"\n  [{difficulty.upper()}]")
+            for t in difficulty_tracks:
+                idx = tracks.index(t) + 1
+                print(f"    {idx}. {t}")
+    
+    print(f"\nSwitch frequency: Every iteration ({ppo_config.get('n_steps', 2048)} steps)")
     print(f"Total timesteps: {args.total_timesteps or ppo_config['total_timesteps']}")
     print("=" * 60 + "\n")
     
@@ -246,21 +268,34 @@ def main():
     print(f"  - {num_rotations} full rotations through all tracks")
     print(f"  - Total: ~{num_rotations * len(tracks) * timesteps_per_track} steps\n")
     
-    # Training loop - rotate through tracks
+    # Training loop - rotate through tracks in curriculum order (easy -> hard)
     for rotation in range(num_rotations):
-        # Shuffle tracks each rotation for randomization
-        shuffled_tracks = tracks.copy()
-        random.shuffle(shuffled_tracks)
+        # Keep curriculum order (easy -> medium -> hard), shuffle within each difficulty
+        curriculum_tracks = []
+        for difficulty in ["easy", "medium", "hard"]:
+            difficulty_tracks = [t for t in tracks if t in TRACKS_BY_DIFFICULTY.get(difficulty, [])]
+            random.shuffle(difficulty_tracks)  # Shuffle within difficulty level
+            curriculum_tracks.extend(difficulty_tracks)
         
-        for track_idx, track in enumerate(shuffled_tracks):
+        for track_idx, track in enumerate(curriculum_tracks):
+            # Determine difficulty level for display
+            difficulty = "unknown"
+            for diff, diff_tracks in TRACKS_BY_DIFFICULTY.items():
+                if track in diff_tracks:
+                    difficulty = diff.upper()
+                    break
+            
             print(f"\n{'='*60}")
             print(f"Rotation {rotation + 1}/{num_rotations} | "
-                  f"Track {track_idx + 1}/{len(tracks)}: {track}")
+                  f"Track {track_idx + 1}/{len(tracks)} [{difficulty}]: {track}")
             print(f"{'='*60}\n")
             
             # Create new environment for this track
             conf["guid"] = str(uuid.uuid4())
             env.close()
+            
+            print("Waiting for simulator to restart...")
+            time.sleep(4.0)
             
             env = gym.make(track, conf=conf)
             env.unwrapped.set_reward_fn(default_reward)
