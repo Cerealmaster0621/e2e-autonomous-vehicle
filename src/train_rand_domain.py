@@ -30,6 +30,7 @@ from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback
 from configs.load_config import load_config
 from envs.reward import default_reward, reset_reward_history
 from envs.wrapper import make_wrapped_env
+from envs.callbacks import CameraViewCallback, ProgressCallback
 
 
 # All available tracks
@@ -110,21 +111,6 @@ class DomainRandomizationCallback(BaseCallback):
         return True
 
 
-class ProgressCallback(BaseCallback):
-    """Log training progress."""
-    
-    def __init__(self, log_freq: int = 5000, verbose: int = 1):
-        super().__init__(verbose)
-        self.log_freq = log_freq
-    
-    def _on_step(self) -> bool:
-        if self.n_calls % self.log_freq == 0 and len(self.model.ep_info_buffer) > 0:
-            ep_rewards = [ep["r"] for ep in self.model.ep_info_buffer]
-            ep_lengths = [ep["l"] for ep in self.model.ep_info_buffer]
-            print(f"[Step {self.num_timesteps}] "
-                  f"Mean reward: {np.mean(ep_rewards):.2f}, "
-                  f"Mean length: {np.mean(ep_lengths):.1f}")
-        return True
 
 
 def resolve_track_name(name: str) -> str:
@@ -220,8 +206,9 @@ def main():
     )
     
     progress_callback = ProgressCallback(log_freq=5000)
+    camera_callback = CameraViewCallback(window_name="Training Camera View")
     
-    callbacks = [checkpoint_callback, progress_callback]
+    callbacks = [checkpoint_callback, progress_callback, camera_callback]
     # Note: domain_rand_callback is disabled for now due to complexity of 
     # switching envs mid-training. Instead, we'll train sequentially on each track.
     

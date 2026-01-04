@@ -58,7 +58,7 @@ reward:
 #========== WRAPPER CONFIGS ==========
 
 wrapper:
-  roi_crop: [40, 0, 0, 0]
+  roi_crop: [30, 0, 0, 0]
   resize: [80, 80]
   grayscale: true
   binary_threshold: null

@@ -8,9 +8,12 @@ import gym_donkeycar
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
+import cv2
+
 from configs.load_config import load_config
 from envs.reward import default_reward, reset_reward_history
 from envs.wrapper import make_wrapped_env
+from envs.callbacks import CameraViewCallback, display_observation
 
 if __name__ == "__main__":
     # load configs
@@ -88,6 +91,8 @@ if __name__ == "__main__":
         print(f"Model observation space: {model.observation_space.shape}")
         
         step_count = 0
+        print("\nPress 'q' in the camera window to quit testing.\n")
+        
         for _ in range(10000):
             action, _states = model.predict(obs, deterministic=True)
             
@@ -99,10 +104,19 @@ if __name__ == "__main__":
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
             
+            # Display what the model sees
+            display_observation(obs, window_name="Model Camera View")
+            
+            # Check for 'q' key to quit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                print("Quit requested by user")
+                break
+            
             if terminated or truncated:
                 obs, info = env.reset()
                 reset_reward_history(env.unwrapped.viewer.handler)
 
+        cv2.destroyAllWindows()
         print("done testing")
 
     else:
@@ -160,12 +174,18 @@ if __name__ == "__main__":
         print(f"Checkpoints will be saved every {args.checkpoint_freq} iterations ({checkpoint_freq} steps)")
         print(f"Checkpoint directory: {checkpoint_dir}")
         
-        # Train the model with checkpoint callback
+        # Setup camera view callback for visualization
+        camera_callback = CameraViewCallback(window_name="Training Camera View")
+        callbacks = [checkpoint_callback, camera_callback]
+        
+        # Train the model with callbacks
         model.learn(
             total_timesteps=ppo_config["total_timesteps"],
-            callback=checkpoint_callback,
+            callback=callbacks,
             reset_num_timesteps=(args.resume is None),  # Continue timestep count if resuming
         )
+        
+        cv2.destroyAllWindows()
 
         # Save the final model
         model.save(ppo_config["save_path"])
