@@ -21,7 +21,7 @@ import time
 import sys
 import uuid
 import random
-
+import gc
 import gymnasium as gym
 import gym_donkeycar
 import numpy as np
@@ -228,9 +228,9 @@ def main():
     )
     
     progress_callback = ProgressCallback(log_freq=5000)
-    camera_callback = CameraViewCallback(window_name="Training Camera View")
+    # camera_callback = CameraViewCallback(window_name="Training Camera View", display_freq=100)
     
-    callbacks = [checkpoint_callback, progress_callback, camera_callback]
+    callbacks = [checkpoint_callback, progress_callback] #, camera_callback
     # Note: domain_rand_callback is disabled for now due to complexity of 
     # switching envs mid-training. Instead, we'll train sequentially on each track.
     
@@ -290,32 +290,87 @@ def main():
                   f"Track {track_idx + 1}/{len(tracks)} [{difficulty}]: {track}")
             print(f"{'='*60}\n")
             
-            # Create new environment for this track
-            conf["guid"] = str(uuid.uuid4())
-            env.close()
+            # Close previous environment safely
+            try:
+                env.close()
+            except Exception as e:
+                print(f"[WARN] Error closing env: {e}")
             
+            gc.collect()
             print("Waiting for simulator to restart...")
-            time.sleep(4.0)
+            time.sleep(6.0)
             
-            env = gym.make(track, conf=conf)
-            env.unwrapped.set_reward_fn(default_reward)
-            env = make_wrapped_env(env, config)
-            model.set_env(env)
+            # Create new environment with retry logic
+            max_retries = 3
+            env = None
+            for retry in range(max_retries):
+                try:
+                    conf["guid"] = str(uuid.uuid4())
+                    env = gym.make(track, conf=conf)
+                    env.unwrapped.set_reward_fn(default_reward)
+                    env = make_wrapped_env(env, config)
+                    model.set_env(env)
+                    print(f"[OK] Connected to {track}")
+                    break
+                except Exception as e:
+                    print(f"[Retry {retry + 1}/{max_retries}] Failed to create env: {e}")
+                    try:
+                        if env is not None:
+                            env.close()
+                    except:
+                        pass
+                    gc.collect()
+                    if retry < max_retries - 1:
+                        wait_time = 5.0 * (retry + 1)
+                        print(f"Waiting {wait_time:.0f}s before retry...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"[ERROR] Skipping track {track} after {max_retries} failed attempts")
+                        env = None
             
-            # Train on this track
-            model.learn(
-                total_timesteps=timesteps_per_track,
-                callback=callbacks,
-                reset_num_timesteps=False,
-            )
+            if env is None:
+                print(f"[SKIP] Could not connect to {track}, moving to next track...")
+                continue
+            
+            # Train on this track with error handling
+            try:
+                model.learn(
+                    total_timesteps=timesteps_per_track,
+                    callback=callbacks,
+                    reset_num_timesteps=False,
+                )
+            except Exception as e:
+                print(f"\n[ERROR] Training crashed on {track}: {e}")
+                print("[SAVE] Saving emergency checkpoint...")
+                emergency_path = f"{checkpoint_dir}/ppo_domain_rand_emergency_{model.num_timesteps}"
+                model.save(emergency_path)
+                print(f"[SAVE] Saved to: {emergency_path}")
+                
+                # Try to close crashed env
+                try:
+                    env.close()
+                except:
+                    pass
+                gc.collect()
+                time.sleep(5.0)
+                
+                # Continue to next track
+                print("[CONTINUE] Moving to next track...")
+                continue
     
     # Save final model
     save_path = "src/models/saved/ppo_domain_rand"
     model.save(save_path)
     print(f"\nFinal model saved to: {save_path}")
+    print(f"Total timesteps trained: {model.num_timesteps}")
     print("Domain randomization training complete!")
     
-    env.close()
+    try:
+        if env is not None:
+            env.close()
+    except Exception as e:
+        print(f"[WARN] Error closing final env: {e}")
+    
     sys.exit(0)
 
 

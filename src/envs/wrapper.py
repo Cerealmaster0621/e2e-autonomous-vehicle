@@ -1,12 +1,16 @@
 """
 Wrapper for the DonkeyCar environment
 
-Image Processing:
-- ROI Cropping
-- Resizing: 80x 80 or 160 x 80
-- Grayscale & Binary Thresholding
-- Normalization: scale RGB 0 ~ 1
-- Frame Stacking : ( 80, 80, 4 ) or ( 160, 80, 4 )
+Image Processing Order:
+1. ROI Crop: Remove unnecessary sky/hood
+2. Resize: Downsample to reduce computation
+3. Random Lighting: Augment brightness (Sim-to-Real)
+4. Grayscale: Reduce dimensionality
+5. Gaussian Noise: Augment sensor noise
+6. Canny Edge: Structure extraction (replaces Binary Threshold)
+7. Cutout: Augment occlusion robustness
+8. Normalization: Scale to [0, 1]
+9. Frame Stacking: Temporal information
 """
 
 import numpy as np
