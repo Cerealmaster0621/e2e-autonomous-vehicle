@@ -175,7 +175,7 @@ if __name__ == "__main__":
         print(f"Checkpoint directory: {checkpoint_dir}")
         
         # Setup camera view callback for visualization
-        camera_callback = CameraViewCallback(window_name="Training Camera View")
+        camera_callback = CameraViewCallback(window_name="Training Camera View", display_freq=10)
         callbacks = [checkpoint_callback, camera_callback]
         
         # Train the model with callbacks

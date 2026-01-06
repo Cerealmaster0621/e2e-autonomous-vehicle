@@ -14,7 +14,7 @@ conf:
 #========== TRAINING CONFIGS ==========
 
 ppo:
-  total_timesteps: 500000
+  total_timesteps: 150000
   learning_rate: 0.0001
   save_path: "src/models/saved/ppo_donkey"
   save_interval: 10000
@@ -36,7 +36,7 @@ sac:
 #========== REWARD CONFIGS ==========
 
 reward:
-  target_velocity: 16.0
+  target_velocity: 18.0
   min_velocity: 3.0 # Minimum velocity threshold before idle penalty kicks in
 
   # Safety rewards (primary guidance signals)
@@ -60,6 +60,25 @@ reward:
 wrapper:
   roi_crop: [30, 0, 0, 0]
   resize: [80, 80]
+  random_lighting: # off when test/real
+    enabled: true
+    brightness_range: [-50, 50] # Additive brightness adjustment
+    contrast_range: [0.7, 1.3] # Multiplicative contrast adjustment
+    probability: 0.5 # Probability of applying augmentation
   grayscale: true
-  binary_threshold: null
+  gaussian_noise: # off when test/real
+    enabled: true
+    std: 10.0 # Standard deviation of noise
+    probability: 0.5 # Probability of applying noise
+  canny_edge:
+    enabled: true
+    low_threshold: 50
+    high_threshold: 150
+  binary_threshold: null # Set to integer (e.g., 128) to enable
+  cutout: # off when test/real
+    enabled: true
+    num_cutouts: 1
+    cutout_size: [10, 20] # [min_size, max_size] for cutout dimensions
+    probability: 0.5
+  normalize: true
   frame_stack: 4

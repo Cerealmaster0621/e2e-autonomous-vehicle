@@ -16,6 +16,7 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 ## System Architecture
 
 ### 1. Image Process Pipelines
+
 1. ROI Crop: Remove unnecessary sky/hood
 2. Resize: Downsample to reduce computation
 3. Random Lighting: Augment brightness (For Sim-to-Real)
