@@ -15,7 +15,16 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 
 ## System Architecture
 
-### 1. Perception Module (Input)
+### 1. Image Process Pipelines
+1. ROI Crop: Remove unnecessary sky/hood
+2. Resize: Downsample to reduce computation
+3. Random Lighting: Augment brightness (For Sim-to-Real)
+4. Grayscale: Reduce dimensionality
+5. Gaussian Noise: Augment sensor noise
+6. Canny Edge: Structure extraction
+7. Cutout: Augment occlusion robustness
+8. Normalization: Scale to [0, 1]
+9. Frame Stacking: Temporal information
 
 ### 2. Reinforcement Learning
 
