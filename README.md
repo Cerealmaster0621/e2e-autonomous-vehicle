@@ -11,8 +11,6 @@
 
 This project implements an **End-to-End Reinforcement Learning (RL)** pipeline for autonomous driving using the **Donkey Simulator(v25.10.06)**.
 
-The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms and analyze their robustness against environmental variations (weather, dynamic obstacles) and interpret their failure modes using Visual Attention Maps.
-
 ## System Architecture
 
 ### 1. Image Process Pipelines
