@@ -9,11 +9,16 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 import cv2
+import numpy as np
 
 from configs.load_config import load_config
 from envs.reward import default_reward, reset_reward_history
 from envs.wrapper import make_wrapped_env
 from envs.callbacks import CameraViewCallback, display_observation
+
+# Post-Mortem Analysis imports
+from analysis.visual_backprop import VisualBackProp
+from utils.recorder import BlackBoxRecorder
 
 if __name__ == "__main__":
     # load configs
@@ -73,18 +78,44 @@ if __name__ == "__main__":
 
     if args.test:
         # Make an environment test our trained policy
-        env = gym.make(args.env_name, conf=conf)
-        env.unwrapped.set_reward_fn(default_reward)
+        # We need access to the raw environment for raw images
+        raw_env = gym.make(args.env_name, conf=conf)
+        raw_env.unwrapped.set_reward_fn(default_reward)
         
         # Apply image processing wrappers
-        env = make_wrapped_env(env, config)
+        env = make_wrapped_env(raw_env, config)
 
         # Load model WITH environment to ensure observation space is properly handled
         model = PPO.load(ppo_config["save_path"], env=env)
         print(f"Timesteps trained: {model.num_timesteps}")
+        
+        # ========== POST-MORTEM ANALYSIS SETUP ==========
+        pm_config = config.get("post_mortem", {})
+        pm_enabled = pm_config.get("enabled", False)
+        
+        recorder = None
+        vbp = None
+        
+        if pm_enabled:
+            # Initialize BlackBoxRecorder (ring buffer)
+            recorder = BlackBoxRecorder(
+                buffer_seconds=pm_config.get("buffer_seconds", 4.0),
+                fps=pm_config.get("fps", 20)
+            )
+            
+            # Initialize VisualBackProp (will register hooks on CNN)
+            vbp = VisualBackProp(model)
+            
+            print(f"\n[Post-Mortem] Enabled - Recording last {pm_config.get('buffer_seconds', 4.0)}s before crashes")
+            print(f"[Post-Mortem] Output directory: {pm_config.get('output_dir', 'src/analysis/crashes')}\n")
+        # ================================================
 
         obs, info = env.reset()
         reset_reward_history(env.unwrapped.viewer.handler)
+        
+        # Start recording for this episode
+        if recorder is not None:
+            recorder.on_episode_start()
         
         # Debug: Print observation and action info
         print(f"Observation shape from env: {obs.shape}")
@@ -104,6 +135,34 @@ if __name__ == "__main__":
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
             
+            # ========== RECORD FRAME FOR POST-MORTEM ==========
+            # Capture raw image AFTER step (when new frame has arrived)
+            if recorder is not None:
+                try:
+                    # Access the raw image from the simulator handler
+                    # In gym-donkeycar, the image is stored in handler.image_array
+                    handler = env.unwrapped.viewer.handler
+                    raw_image = handler.image_array.copy()
+                    
+                    # Build telemetry info
+                    telemetry = {
+                        'cte': getattr(handler, 'cte', 0.0),
+                        'speed': getattr(handler, 'forward_vel', 0.0),
+                        'hit': getattr(handler, 'hit', 'none'),
+                    }
+                    
+                    recorder.record(
+                        raw_image=raw_image,
+                        processed_obs=obs,
+                        action=action,
+                        reward=reward,
+                        info=telemetry
+                    )
+                except Exception as e:
+                    if step_count <= 5:  # Only print first few errors
+                        print(f"[Post-Mortem] Warning: Could not capture frame: {e}")
+            # ==================================================
+            
             # Display what the model sees
             display_observation(obs, window_name="Model Camera View")
             
@@ -113,10 +172,37 @@ if __name__ == "__main__":
                 break
             
             if terminated or truncated:
+                # ========== TRIGGER POST-MORTEM ON CRASH ==========
+                if recorder is not None and pm_config.get("auto_save_on_crash", True):
+                    print(f"\n[Post-Mortem] Crash detected! Processing {len(recorder)} buffered frames...")
+                    
+                    # Save post-mortem video with attention maps
+                    video_path = recorder.save_post_mortem(
+                        vbp=vbp if pm_config.get("include_attention", True) else None,
+                        output_dir=pm_config.get("output_dir", "src/analysis/crashes"),
+                        include_attention=pm_config.get("include_attention", True),
+                        include_telemetry=pm_config.get("include_telemetry", True),
+                        codec=pm_config.get("video_codec", "mp4v")
+                    )
+                    
+                    # Optionally display replay
+                    if pm_config.get("display_replay", False) and video_path:
+                        recorder.display_buffer_live(vbp, window_name="Crash Replay")
+                # ==================================================
+                
                 obs, info = env.reset()
                 reset_reward_history(env.unwrapped.viewer.handler)
+                
+                # Start fresh recording for new episode
+                if recorder is not None:
+                    recorder.on_episode_start()
 
         cv2.destroyAllWindows()
+        
+        # Cleanup
+        if vbp is not None:
+            vbp.close()
+        
         print("done testing")
 
     else:
@@ -176,7 +262,7 @@ if __name__ == "__main__":
         
         # Setup camera view callback for visualization
         camera_callback = CameraViewCallback(window_name="Training Camera View", display_freq=10)
-        callbacks = [checkpoint_callback, camera_callback]
+        callbacks = [checkpoint_callback]#, camera_callback]
         
         # Train the model with callbacks
         model.learn(

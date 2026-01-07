@@ -14,7 +14,7 @@ conf:
 #========== TRAINING CONFIGS ==========
 
 ppo:
-  total_timesteps: 150000
+  total_timesteps: 100000
   learning_rate: 0.0001
   save_path: "src/models/saved/ppo_donkey"
   save_interval: 10000
@@ -36,7 +36,7 @@ sac:
 #========== REWARD CONFIGS ==========
 
 reward:
-  target_velocity: 18.0
+  target_velocity: 15.0
   min_velocity: 3.0 # Minimum velocity threshold before idle penalty kicks in
 
   # Safety rewards (primary guidance signals)
@@ -82,3 +82,16 @@ wrapper:
     probability: 0.5
   normalize: true
   frame_stack: 4
+
+#========== POST-MORTEM ANALYSIS CONFIGS ==========
+
+post_mortem:
+  enabled: true
+  buffer_seconds: 4.0 # Seconds of data to keep before crash
+  fps: 20 # Expected frames per second
+  output_dir: "src/logs/crashes"
+  include_attention: true # Compute VisualBackProp attention maps
+  include_telemetry: true # Overlay steering/throttle/reward info
+  video_codec: "mp4v"
+  auto_save_on_crash: true # Automatically save video when done=True
+  display_replay: false # Display replay window after crash (blocks execution)
