@@ -44,7 +44,11 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 ### 3. Interpretability (Post-Mortem Analysis)
 
 - Triggers upon collision events.
-- Generates **Attention Maps** overlaying the last few(undecided) seconds of input frames to visualize what the agent was focusing on (e.g., did it see the car or was it looking at the clouds?).
+- Generates **Attention Maps** using [VisualBackProp](https://arxiv.org/abs/1611.05418) [1], overlaying the last 4 seconds of input frames to visualize what the agent was focusing on (e.g., did it see the obstacle or was it looking at the clouds?).
+
+<p align="center">
+    <img src="resources/crash_demo_thumbnail.gif" alt="Post-Mortem Analysis Demo" width="400">
+</p>
 
 ---
 
@@ -85,3 +89,5 @@ The primary goal is to benchmark on-policy (PPO) vs. off-policy (SAC) algorithms
 > **Note:** If you get permission errors, do not use `sudo` unless necessary.
 
 ---
+
+> [1] Bojarski, M. et al. (2017). _VisualBackProp: efficient visualization of CNNs_. arXiv preprint arXiv:1611.05418.
