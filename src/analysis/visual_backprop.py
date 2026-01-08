@@ -297,15 +297,38 @@ class VisualBackProp:
         mask: np.ndarray,
         frame_idx: int = 0,
         total_frames: int = 0,
-        extra_info: Optional[Dict] = None
+        extra_info: Optional[Dict] = None,
+        roi_crop: Optional[Tuple[int, int, int, int]] = None
     ) -> np.ndarray:
+        """
+        Create visualization frame with proper alignment.
+        
+        Args:
+            raw_image: Original RGB image from simulator
+            processed_obs: Processed observation (what model sees)
+            mask: Attention mask from VisualBackProp
+            frame_idx: Current frame index
+            total_frames: Total frames for counter display
+            extra_info: Telemetry data to overlay
+            roi_crop: (top, bottom, left, right) crop applied to raw image before model saw it.
+                      If provided, the same crop is applied to raw_image for proper alignment.
+        """
+        # Apply ROI crop to raw image to match what the model actually sees
+        # This ensures the attention map aligns correctly with the cropped region
+        if roi_crop is not None:
+            top, bottom, left, right = roi_crop
+            img_h, img_w = raw_image.shape[:2]
+            bottom_idx = img_h - bottom if bottom > 0 else img_h
+            right_idx = img_w - right if right > 0 else img_w
+            raw_image = raw_image[top:bottom_idx, left:right_idx].copy()
+        
         h, w = raw_image.shape[:2]
         
         # Ensure raw image is RGB uint8
         if raw_image.dtype != np.uint8:
             raw_image = np.clip(raw_image * 255, 0, 255).astype(np.uint8)
         
-        # Create heatmap overlay on raw image
+        # Create heatmap overlay on cropped raw image (now properly aligned)
         overlay = self.overlay_heatmap(raw_image.copy(), mask, alpha=0.6)
         
         # Prepare processed observation for display

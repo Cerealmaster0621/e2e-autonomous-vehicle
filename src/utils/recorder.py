@@ -51,19 +51,13 @@ class BlackBoxRecorder:
         self, 
         buffer_seconds: float = 4.0,
         fps: int = 20,
-        raw_image_size: Optional[Tuple[int, int]] = None
+        raw_image_size: Optional[Tuple[int, int]] = None,
+        roi_crop: Optional[Tuple[int, int, int, int]] = None
     ):
-        """
-        Initialize the BlackBoxRecorder.
-        
-        Args:
-            buffer_seconds: Number of seconds to keep in buffer
-            fps: Expected frames per second from simulation
-            raw_image_size: Expected (height, width) of raw images. If None, determined from first frame.
-        """
         self.buffer_seconds = buffer_seconds
         self.fps = fps
         self.raw_image_size = raw_image_size
+        self.roi_crop = roi_crop  # Store crop parameters for visualization alignment
         
         # Calculate buffer size
         self.buffer_size = int(buffer_seconds * fps)
@@ -77,6 +71,8 @@ class BlackBoxRecorder:
         self.crash_count = 0
         
         print(f"[BlackBoxRecorder] Initialized: {buffer_seconds}s buffer @ {fps} FPS = {self.buffer_size} frames")
+        if roi_crop:
+            print(f"[BlackBoxRecorder] ROI crop for visualization: top={roi_crop[0]}, bottom={roi_crop[1]}, left={roi_crop[2]}, right={roi_crop[3]}")
     
     def record(
         self,
@@ -87,19 +83,6 @@ class BlackBoxRecorder:
         info: Optional[Dict] = None,
         timestamp: Optional[float] = None
     ) -> None:
-        """
-        Record a single frame of data into the ring buffer.
-        
-        This is designed to be called every step with minimal overhead.
-        
-        Args:
-            raw_image: Original RGB image from simulator (before processing)
-            processed_obs: Processed observation tensor (what model sees)
-            action: Action taken [steering, throttle]
-            reward: Reward received
-            info: Additional telemetry info
-            timestamp: Simulation timestamp (if None, uses frame count)
-        """
         # Auto-detect raw image size from first frame
         if self.raw_image_size is None:
             self.raw_image_size = (raw_image.shape[0], raw_image.shape[1])
@@ -117,15 +100,6 @@ class BlackBoxRecorder:
         self.frame_count += 1
     
     def get_buffer_data(self) -> Tuple[np.ndarray, np.ndarray, List[FrameData]]:
-        """
-        Get all data from the buffer as numpy arrays.
-        
-        Returns:
-            Tuple of:
-                - raw_images: (N, H, W, 3) array of raw RGB images
-                - processed_obs: (N, ...) array of processed observations
-                - frame_data_list: List of FrameData objects for metadata
-        """
         if len(self.buffer) == 0:
             return np.array([]), np.array([]), []
         
@@ -144,23 +118,6 @@ class BlackBoxRecorder:
         include_telemetry: bool = True,
         codec: str = "mp4v"
     ) -> Optional[str]:
-        """
-        Save buffered data as a post-mortem analysis video.
-        
-        If a VisualBackProp instance is provided, computes attention maps
-        using batch processing for efficiency.
-        
-        Args:
-            vbp: VisualBackProp instance for attention visualization
-            output_dir: Directory to save video
-            video_filename: Custom filename. If None, auto-generated with timestamp.
-            include_attention: Whether to compute and overlay attention maps
-            include_telemetry: Whether to overlay telemetry data
-            codec: Video codec (default: mp4v for .mp4)
-        
-        Returns:
-            Path to saved video file, or None if buffer is empty
-        """
         if len(self.buffer) == 0:
             print("[BlackBoxRecorder] Buffer is empty, nothing to save")
             return None
@@ -186,8 +143,16 @@ class BlackBoxRecorder:
         if include_attention and vbp is not None:
             print("[BlackBoxRecorder] Computing VisualBackProp attention maps (batch)...")
             try:
-                # Target size matches raw image dimensions
-                target_size = (raw_images.shape[1], raw_images.shape[2])
+                # Target size matches CROPPED raw image dimensions
+                raw_h, raw_w = raw_images.shape[1], raw_images.shape[2]
+                if self.roi_crop:
+                    top, bottom, left, right = self.roi_crop
+                    cropped_h = raw_h - top - bottom
+                    cropped_w = raw_w - left - right
+                    target_size = (cropped_h, cropped_w)
+                else:
+                    target_size = (raw_h, raw_w)
+                
                 attention_masks = vbp.compute_batch_attention_masks(
                     processed_obs, 
                     target_size=target_size
@@ -197,9 +162,15 @@ class BlackBoxRecorder:
                 print(f"[BlackBoxRecorder] Warning: Failed to compute attention maps: {e}")
                 attention_masks = None
         
-        # Determine video frame size
+        # Determine video frame size AFTER ROI crop
         # Layout: [Raw Image | Attention Overlay | Processed Input]
-        h, w = raw_images.shape[1], raw_images.shape[2]
+        raw_h, raw_w = raw_images.shape[1], raw_images.shape[2]
+        if self.roi_crop:
+            top, bottom, left, right = self.roi_crop
+            h = raw_h - top - bottom
+            w = raw_w - left - right
+        else:
+            h, w = raw_h, raw_w
         
         if include_attention and attention_masks is not None:
             frame_width = w * 3  # Three panels
@@ -242,7 +213,8 @@ class BlackBoxRecorder:
                     mask=attention_masks[i],
                     frame_idx=i,
                     total_frames=num_frames,
-                    extra_info=extra_info
+                    extra_info=extra_info,
+                    roi_crop=self.roi_crop  # Pass crop params for proper alignment
                 )
             else:
                 # Simple two-panel visualization without attention
@@ -269,6 +241,14 @@ class BlackBoxRecorder:
         extra_info: Dict
     ) -> np.ndarray:
         """Create a simple visualization frame without attention overlay."""
+        # Apply ROI crop to match what model sees
+        if self.roi_crop is not None:
+            top, bottom, left, right = self.roi_crop
+            img_h, img_w = raw_image.shape[:2]
+            bottom_idx = img_h - bottom if bottom > 0 else img_h
+            right_idx = img_w - right if right > 0 else img_w
+            raw_image = raw_image[top:bottom_idx, left:right_idx].copy()
+        
         h, w = raw_image.shape[:2]
         
         # Ensure uint8
@@ -335,14 +315,6 @@ class BlackBoxRecorder:
         vbp: Optional[Any] = None,
         window_name: str = "Post-Mortem Replay"
     ) -> None:
-        """
-        Display buffered frames in a window for live review.
-        Press 'q' to close, Space to pause/resume, Left/Right arrows to step.
-        
-        Args:
-            vbp: VisualBackProp instance for attention visualization
-            window_name: OpenCV window name
-        """
         if len(self.buffer) == 0:
             print("[BlackBoxRecorder] Buffer is empty")
             return
@@ -373,7 +345,8 @@ class BlackBoxRecorder:
                     processed_obs=frame_data.processed_obs,
                     mask=attention_masks[idx],
                     frame_idx=idx,
-                    total_frames=num_frames
+                    total_frames=num_frames,
+                    roi_crop=self.roi_crop  # Pass crop params for proper alignment
                 )
             else:
                 viz_frame = self._create_simple_frame(

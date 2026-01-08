@@ -97,17 +97,24 @@ if __name__ == "__main__":
         vbp = None
         
         if pm_enabled:
+            # Get ROI crop from wrapper config for proper attention map alignment
+            wrapper_cfg = config.get("wrapper", {})
+            roi_crop = wrapper_cfg.get("roi_crop", None)
+            if roi_crop:
+                roi_crop = tuple(roi_crop)  # Convert list to tuple
+            
             # Initialize BlackBoxRecorder (ring buffer)
             recorder = BlackBoxRecorder(
                 buffer_seconds=pm_config.get("buffer_seconds", 4.0),
-                fps=pm_config.get("fps", 20)
+                fps=pm_config.get("fps", 20),
+                roi_crop=roi_crop  # Pass crop params for visualization alignment
             )
             
             # Initialize VisualBackProp (will register hooks on CNN)
             vbp = VisualBackProp(model)
             
             print(f"\n[Post-Mortem] Enabled - Recording last {pm_config.get('buffer_seconds', 4.0)}s before crashes")
-            print(f"[Post-Mortem] Output directory: {pm_config.get('output_dir', 'src/analysis/crashes')}\n")
+            print(f"[Post-Mortem] Output directory: {pm_config.get('output_dir', 'src/logs/crashes')}\n")
         # ================================================
 
         obs, info = env.reset()
