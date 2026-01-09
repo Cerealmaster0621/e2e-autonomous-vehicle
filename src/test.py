@@ -7,6 +7,7 @@ import gymnasium as gym
 import gym_donkeycar
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.utils import get_schedule_fn
 
 import cv2
 import numpy as np
@@ -244,8 +245,22 @@ if __name__ == "__main__":
                 env=env,
                 tensorboard_log="src/logs/",
             )
-            # Update learning rate if different from checkpoint
-            model.learning_rate = ppo_config.get("learning_rate", 1e-4)
+            # Apply ALL hyperparameters from config (overwrite checkpoint values)
+            new_lr = ppo_config.get("learning_rate", 1e-4)
+            new_clip = ppo_config.get("clip_range", 0.2)
+            
+            model.learning_rate = get_schedule_fn(new_lr)
+            model.lr_schedule = get_schedule_fn(new_lr)
+            model.n_epochs = ppo_config.get("n_epochs", 10)
+            model.batch_size = ppo_config.get("batch_size", 64)
+            model.gamma = ppo_config.get("gamma", 0.99)
+            model.gae_lambda = ppo_config.get("gae_lambda", 0.95)
+            model.clip_range = get_schedule_fn(new_clip)
+            model.ent_coef = ppo_config.get("ent_coef", 0.01)
+            
+            print(f"[Config Override] Applied new hyperparameters from default.yaml:")
+            print(f"  learning_rate={new_lr}, n_epochs={model.n_epochs}, "
+                  f"batch_size={model.batch_size}, clip_range={new_clip}, ent_coef={model.ent_coef}")
         else:
             # Create new model
             model = PPO(

@@ -300,19 +300,6 @@ class VisualBackProp:
         extra_info: Optional[Dict] = None,
         roi_crop: Optional[Tuple[int, int, int, int]] = None
     ) -> np.ndarray:
-        """
-        Create visualization frame with proper alignment.
-        
-        Args:
-            raw_image: Original RGB image from simulator
-            processed_obs: Processed observation (what model sees)
-            mask: Attention mask from VisualBackProp
-            frame_idx: Current frame index
-            total_frames: Total frames for counter display
-            extra_info: Telemetry data to overlay
-            roi_crop: (top, bottom, left, right) crop applied to raw image before model saw it.
-                      If provided, the same crop is applied to raw_image for proper alignment.
-        """
         # Apply ROI crop to raw image to match what the model actually sees
         # This ensures the attention map aligns correctly with the cropped region
         if roi_crop is not None:
