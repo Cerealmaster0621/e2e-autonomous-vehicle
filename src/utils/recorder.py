@@ -1,11 +1,6 @@
 """
-BlackBoxRecorder - Ring Buffer and Video Recording Utility for Post-Mortem Analysis
-
-This module provides a circular buffer to store the last N seconds of driving data
-(raw images + processed observations) and converts them to video when a crash occurs.
-
-The recorder uses lazy evaluation - it only stores data during normal operation
-and triggers expensive VisualBackProp computation only when needed (on crash).
+This module provides circular buffer to store the last N seconds of driving data
+(raw images + processed observations) and converts them to video when a crash occurs
 """
 
 import os
@@ -30,12 +25,6 @@ class FrameData:
 
 class BlackBoxRecorder:
     """
-    Circular buffer recorder for autonomous driving post-mortem analysis.
-    
-    Stores the last N seconds of driving data in a ring buffer.
-    When triggered (e.g., on crash), saves the buffered data as a video
-    with optional VisualBackProp attention overlays.
-    
     Usage:
         recorder = BlackBoxRecorder(buffer_seconds=4.0, fps=20)
         
@@ -265,10 +254,6 @@ class BlackBoxRecorder:
             proc_display = proc_display.squeeze()
         
         # Convert to proper display format [0, 255]
-        # Handle various input formats:
-        # - float32 [0, 1]: multiply by 255
-        # - uint8 [0, 1]: from normalize->frame_stack bug, multiply by 255  
-        # - uint8 [0, 255]: already correct
         proc_display = proc_display.astype(np.float32)
         max_val = proc_display.max()
         
@@ -374,7 +359,7 @@ class BlackBoxRecorder:
         cv2.destroyWindow(window_name)
     
     def clear(self) -> None:
-        """Clear the buffer (e.g., after saving or on new episode)."""
+        """Clear the buffer"""
         self.buffer.clear()
         self.frame_count = 0
     

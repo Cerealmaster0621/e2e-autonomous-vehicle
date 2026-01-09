@@ -170,7 +170,7 @@ class VisualBackProp:
             align_corners=False
         )
         
-        # Convert to numpy and normalize to [0, 1]
+        # Convert to numpy , normalize to [0, 1]
         mask = mask.squeeze().cpu().numpy()
         
         # Normalize
@@ -329,10 +329,6 @@ class VisualBackProp:
             proc_display = proc_display.squeeze()
         
         # Convert to proper display format [0, 255]
-        # Handle various input formats:
-        # - float32 [0, 1]: multiply by 255
-        # - uint8 [0, 1]: from normalize->frame_stack bug, multiply by 255
-        # - uint8 [0, 255]: already correct
         proc_display = proc_display.astype(np.float32)
         max_val = proc_display.max()
         
